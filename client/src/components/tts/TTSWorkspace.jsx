@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Sparkles, Wand2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function TTSWorkspace() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [audioState, setAudioState] = useState({ hasAudio: false });
+  const requestInFlight = useRef(false);
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const charCount = text.length;
@@ -56,6 +57,10 @@ export default function TTSWorkspace() {
   };
 
   const handleGenerate = async () => {
+    if (requestInFlight.current) {
+      return;
+    }
+
     if (!text.trim()) {
       setError(EMPTY_TEXT_ERROR);
       return;
@@ -66,6 +71,7 @@ export default function TTSWorkspace() {
       return;
     }
 
+    requestInFlight.current = true;
     setLoading(true);
     setError("");
     setSuccessMessage("");
@@ -82,6 +88,7 @@ export default function TTSWorkspace() {
     } catch (requestError) {
       setError(requestError.message || "Unable to send the TTS request.");
     } finally {
+      requestInFlight.current = false;
       setLoading(false);
     }
   };

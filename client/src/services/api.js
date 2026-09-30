@@ -24,7 +24,7 @@ export const generateSpeech = async (data) => {
         throw new Error("The backend returned an invalid response.");
     }
 
-    if (!response.ok || result.success === false) {
+    if (!response.ok || result.success !== true) {
         throw new Error(
             typeof result.message === "string" && result.message
                 ? result.message
