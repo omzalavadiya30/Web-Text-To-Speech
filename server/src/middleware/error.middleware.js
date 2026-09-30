@@ -13,7 +13,7 @@ export const errorMiddleware = (error, req, res, next) => {
   }
 
   const statusCode = error.statusCode || error.status || 500;
-  const message = NODE_ENV === "production" ? "Something went wrong" : error.message || "Something went wrong";
+  const message = statusCode >= 500 ? "Internal server error" : NODE_ENV === "production" ? "Something went wrong" : error.message || "Internal server error";
 
   return res.status(statusCode).json({
     success: false,

@@ -3,19 +3,35 @@ export const handleTtsRequest = (req, res) => {
 
   if (typeof text !== "string" || !text.trim()) {
     return res.status(400).json({ success: false, message: "Text is required" });
-  } else if (typeof language !== "string" || !language.trim()) {
+  }
+
+  if (text.length > 5000) {
+    return res.status(400).json({ success: false, message: "Text must be 5000 characters or fewer" });
+  }
+
+  if (typeof language !== "string" || !language.trim()) {
     return res.status(400).json({ success: false, message: "Language is required" });
-  } else if (typeof voice !== "string" || !voice.trim()) {
+  }
+
+  if (typeof voice !== "string" || !voice.trim()) {
     return res.status(400).json({ success: false, message: "Voice is required" });
-  } else if (typeof speed !== "number" || !Number.isFinite(speed)) {
+  }
+
+  if (speed !== undefined && (typeof speed !== "number" || !Number.isFinite(speed))) {
     return res.status(400).json({ success: false, message: "Speed must be a number" });
-  } else if (typeof pitch !== "number" || !Number.isFinite(pitch)) {
+  }
+
+  if (pitch !== undefined && (typeof pitch !== "number" || !Number.isFinite(pitch))) {
     return res.status(400).json({ success: false, message: "Pitch must be a number" });
   }
 
+  const data = { text, language, voice };
+  if (speed !== undefined) data.speed = speed;
+  if (pitch !== undefined) data.pitch = pitch;
+
   return res.status(200).json({
     success: true,
-    message: "TTS request received successfully",
-    data: { text, language, voice, speed, pitch },
+    message: "TTS request validated successfully",
+    data,
   });
 };
