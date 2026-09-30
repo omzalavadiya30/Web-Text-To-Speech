@@ -18,6 +18,7 @@ export default function TextInput({
         <Textarea
           id="tts-text"
           value={value}
+          maxLength={maxCharacters}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Enter or paste your text here..."
           aria-describedby="text-stats"

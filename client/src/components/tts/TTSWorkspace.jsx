@@ -15,6 +15,7 @@ import { languages } from "@/data/languages";
 import { getVoicesForLanguage } from "@/data/voices";
 
 const MAX_CHARACTERS = 5000;
+const EMPTY_TEXT_ERROR = "Please enter some text before generating speech.";
 
 export default function TTSWorkspace() {
   const [text, setText] = useState("");
@@ -40,18 +41,13 @@ export default function TTSWorkspace() {
   };
 
   const handleTextChange = (value) => {
-    if (value.length <= MAX_CHARACTERS) {
-      setText(value);
-      setError("");
-      return;
-    }
-
-    setError(`Text exceeds the maximum of ${MAX_CHARACTERS} characters.`);
+    setText(value.slice(0, MAX_CHARACTERS));
+    setError("");
   };
 
   const handleGenerate = () => {
     if (!text.trim()) {
-      setError("Please enter some text before generating speech.");
+      setError(EMPTY_TEXT_ERROR);
       return;
     }
 

@@ -10,8 +10,8 @@ export default function GenerateButton({ disabled, loading, onClick }) {
       type="button"
       variant="default"
       size="lg"
-      className="w-full justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 sm:w-auto"
-      disabled={disabled || loading}
+      className="w-full cursor-pointer justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-slate-900 sm:w-auto"
+      disabled={loading}
       onClick={onClick}
       aria-label="Generate speech"
     >
