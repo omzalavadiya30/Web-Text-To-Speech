@@ -4,16 +4,14 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import routes from "./routes/index.routes.js";
-import { notFoundMiddleware } from "./utils/functions.js";
-import { errorMiddleware } from "./utils/functions.js";
-import { CLIENT_URL } from "./config/constants.js";
+import { errorMiddleware, notFoundMiddleware } from "./middleware/error.middleware.js";
+import { CLIENT_URL } from "./config/env.js";
 
 const app = express();
 
 app.use(
   cors({
     origin: CLIENT_URL,
-    credentials: true,
   })
 );
 
