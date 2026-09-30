@@ -7,7 +7,7 @@ export const notFoundMiddleware = (req, res) => {
 
 export const errorMiddleware = (error, req, res, next) => {
   console.error(error);
-  const statusCode = error.statusCode || 500;
+  const statusCode = error.statusCode || error.status || 500;
 
   return res.status(statusCode).json({
     success: false,

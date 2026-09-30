@@ -13,6 +13,7 @@ import TextInput from "@/components/tts/TextInput";
 import VoiceSelector from "@/components/tts/VoiceSelector";
 import { languages } from "@/data/languages";
 import { getVoicesForLanguage } from "@/data/voices";
+import { generateSpeech } from "@/services/api";
 
 const MAX_CHARACTERS = 5000;
 const EMPTY_TEXT_ERROR = "Please enter some text before generating speech.";
@@ -25,6 +26,7 @@ export default function TTSWorkspace() {
   const [pitch, setPitch] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [audioState, setAudioState] = useState({ hasAudio: false });
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -44,14 +46,16 @@ export default function TTSWorkspace() {
     }
 
     setError("");
+    setSuccessMessage("");
   };
 
   const handleTextChange = (value) => {
     setText(value.slice(0, MAX_CHARACTERS));
     setError("");
+    setSuccessMessage("");
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!text.trim()) {
       setError(EMPTY_TEXT_ERROR);
       return;
@@ -63,16 +67,29 @@ export default function TTSWorkspace() {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await generateSpeech({
+        text,
+        language: selectedLanguage,
+        voice: validSelectedVoice,
+        speed,
+        pitch,
+      });
+      setSuccessMessage(response.message || "Request sent successfully.");
+    } catch (requestError) {
+      setError(requestError.message || "Unable to send the TTS request.");
+    } finally {
       setLoading(false);
-      setError("");
-      setAudioState({ hasAudio: false });
-    }, 1000);
+    }
   };
 
   const handleClear = () => {
     setText("");
     setError("");
+    setSuccessMessage("");
   };
 
   return (
@@ -110,6 +127,11 @@ export default function TTSWorkspace() {
             />
 
             {error && <ErrorMessage title="Validation error" message={error} />}
+            {successMessage && (
+              <p role="status" className="text-sm text-emerald-700">
+                {successMessage}
+              </p>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <LanguageSelector
