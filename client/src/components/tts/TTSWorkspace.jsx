@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Sparkles, Wand2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import AudioPlayer from "@/components/tts/AudioPlayer";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import GenerateButton from "@/components/tts/GenerateButton";
 import LanguageSelector from "@/components/tts/LanguageSelector";
 import SpeechSettings from "@/components/tts/SpeechSettings";
+import TextInput from "@/components/tts/TextInput";
 import VoiceSelector from "@/components/tts/VoiceSelector";
 import { languages } from "@/data/languages";
 import { getVoicesForLanguage } from "@/data/voices";
@@ -20,28 +18,35 @@ const MAX_CHARACTERS = 5000;
 
 export default function TTSWorkspace() {
   const [text, setText] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [voice, setVoice] = useState("en-female");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [selectedVoice, setSelectedVoice] = useState("en-female");
   const [speed, setSpeed] = useState(1);
   const [pitch, setPitch] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [audioState, setAudioState] = useState({ hasAudio: false });
 
-  const wordCount = useMemo(() => {
-    if (!text.trim()) return 0;
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  }, [text]);
-
+  const wordCount = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const charCount = text.length;
-  const availableVoices = getVoicesForLanguage(language);
+  const availableVoices = getVoicesForLanguage(selectedLanguage);
+  const validSelectedVoice = availableVoices.some((voice) => voice.id === selectedVoice)
+    ? selectedVoice
+    : availableVoices[0]?.id ?? "";
+
+  const handleLanguageChange = (nextLanguage) => {
+    const nextLanguageVoices = getVoicesForLanguage(nextLanguage);
+    setSelectedLanguage(nextLanguage);
+    setSelectedVoice(nextLanguageVoices[0]?.id ?? "");
+  };
 
   const handleTextChange = (value) => {
     if (value.length <= MAX_CHARACTERS) {
       setText(value);
       setError("");
-    } else {
-      setError(`Text exceeds the maximum of ${MAX_CHARACTERS} characters.`);
+      return;
     }
+
+    setError(`Text exceeds the maximum of ${MAX_CHARACTERS} characters.`);
   };
 
   const handleGenerate = () => {
@@ -50,7 +55,7 @@ export default function TTSWorkspace() {
       return;
     }
 
-    if (!language || !availableVoices.some((item) => item.id === voice)) {
+    if (!selectedLanguage || !availableVoices.some((item) => item.id === validSelectedVoice)) {
       setError("Please select a valid language and voice.");
       return;
     }
@@ -59,10 +64,11 @@ export default function TTSWorkspace() {
     setTimeout(() => {
       setLoading(false);
       setError("");
+      setAudioState({ hasAudio: false });
     }, 1000);
   };
 
-  const clearText = () => {
+  const handleClear = () => {
     setText("");
     setError("");
   };
@@ -89,45 +95,31 @@ export default function TTSWorkspace() {
           <CardHeader className="border-b border-slate-200 bg-slate-50/80 px-5 py-5 sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-xl font-semibold text-slate-900">Text input</CardTitle>
-              <button
-                type="button"
-                onClick={clearText}
-                className="text-sm font-medium text-slate-500 transition hover:text-slate-900"
-              >
-                Clear
-              </button>
             </div>
           </CardHeader>
           <CardContent className="space-y-5 p-5 sm:p-6">
-            <div className="space-y-2">
-              <Label htmlFor="tts-text" className="text-sm font-medium text-slate-700">
-                Enter your text
-              </Label>
-              <Textarea
-                id="tts-text"
-                value={text}
-                onChange={(event) => handleTextChange(event.target.value)}
-                placeholder="Enter or paste your text here..."
-                aria-describedby="text-stats"
-                className="min-h-50 resize-none border-slate-200 bg-slate-50 text-base shadow-none placeholder:text-slate-400 focus-visible:ring-slate-900 sm:min-h-65"
-              />
-            </div>
-
-            <div id="text-stats" className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-              <div className="flex items-center gap-4">
-                <span>Characters: {charCount} / {MAX_CHARACTERS}</span>
-                <span>Words: {wordCount}</span>
-              </div>
-              <div className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                Max 5000 chars
-              </div>
-            </div>
+            <TextInput
+              value={text}
+              onChange={handleTextChange}
+              onClear={handleClear}
+              charCount={charCount}
+              wordCount={wordCount}
+              maxCharacters={MAX_CHARACTERS}
+            />
 
             {error && <ErrorMessage title="Validation error" message={error} />}
 
             <div className="grid gap-4 md:grid-cols-2">
-              <LanguageSelector value={language} onChange={setLanguage} label="Language" />
-              <VoiceSelector language={language} value={voice} onChange={setVoice} label="Voice" />
+              <LanguageSelector
+                selectedLanguage={selectedLanguage}
+                onLanguageChange={handleLanguageChange}
+                languages={languages}
+              />
+              <VoiceSelector
+                selectedVoice={validSelectedVoice}
+                onVoiceChange={setSelectedVoice}
+                voices={availableVoices}
+              />
             </div>
 
             <SpeechSettings speed={speed} onSpeedChange={setSpeed} pitch={pitch} onPitchChange={setPitch} />
@@ -153,7 +145,7 @@ export default function TTSWorkspace() {
               </div>
             </CardHeader>
             <CardContent>
-              <AudioPlayer hasAudio={false} />
+              <AudioPlayer hasAudio={audioState.hasAudio} />
             </CardContent>
           </Card>
 

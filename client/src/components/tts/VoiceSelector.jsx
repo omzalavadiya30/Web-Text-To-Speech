@@ -8,15 +8,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { getVoicesForLanguage } from "@/data/voices";
 
-export default function VoiceSelector({ language, value, onChange, label = "Voice" }) {
-  const voices = getVoicesForLanguage(language);
-
+export default function VoiceSelector({ selectedVoice, onVoiceChange, voices, label = "Voice" }) {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-slate-700">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
+      <Select value={selectedVoice} onValueChange={onVoiceChange}>
         <SelectTrigger aria-label="Select voice" className="w-full">
           <SelectValue placeholder="Select a voice" />
         </SelectTrigger>
