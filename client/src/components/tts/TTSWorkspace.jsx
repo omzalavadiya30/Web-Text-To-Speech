@@ -35,9 +35,15 @@ export default function TTSWorkspace() {
     : availableVoices[0]?.id ?? "";
 
   const handleLanguageChange = (nextLanguage) => {
-    const nextLanguageVoices = getVoicesForLanguage(nextLanguage);
     setSelectedLanguage(nextLanguage);
-    setSelectedVoice(nextLanguageVoices[0]?.id ?? "");
+    const nextLanguageVoices = getVoicesForLanguage(nextLanguage);
+    if (nextLanguageVoices.length > 0) {
+      setSelectedVoice(nextLanguageVoices[0].id);
+    } else {
+      setSelectedVoice("");
+    }
+
+    setError("");
   };
 
   const handleTextChange = (value) => {
