@@ -62,3 +62,29 @@ export const generateSpeech = async (data) => {
 
     return result.data;
 };
+
+export const downloadAudio = async (audioUrl, fileName = "generated-speech") => {
+    if (typeof audioUrl !== "string" || !audioUrl.trim()) {
+        throw new Error("Audio URL is missing.");
+    }
+
+    const response = await fetch(audioUrl, { method: "GET", cache: "no-store" });
+
+    if (!response.ok) {
+        throw new Error("Unable to download audio. Please try again.");
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const downloadName = `${fileName}-${Date.now()}.mp3`;
+
+    link.href = objectUrl;
+    link.download = downloadName;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(objectUrl);
+};

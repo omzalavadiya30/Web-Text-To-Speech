@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Download, Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { downloadAudio } from "@/services/api";
 
 const formatTime = (seconds) => {
   if (!Number.isFinite(seconds) || seconds < 0 || seconds === Infinity) {
@@ -27,7 +28,9 @@ export default function AudioPlayer({ hasAudio = false, audioUrl = "" }) {
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [playerError, setPlayerError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -170,6 +173,23 @@ export default function AudioPlayer({ hasAudio = false, audioUrl = "" }) {
     }
   };
 
+  const handleDownload = async () => {
+    if (!hasValidAudio || !audioUrl) {
+      return;
+    }
+
+    setIsDownloading(true);
+    setDownloadError("");
+
+    try {
+      await downloadAudio(audioUrl, "generated-speech");
+    } catch (error) {
+      setDownloadError(error.message || "Unable to download audio. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (!hasValidAudio) {
     return (
       <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
@@ -206,6 +226,10 @@ export default function AudioPlayer({ hasAudio = false, audioUrl = "" }) {
 
       {playerError && (
         <p className="text-sm text-red-600">{playerError}</p>
+      )}
+
+      {downloadError && (
+        <p className="text-sm text-red-600">{downloadError}</p>
       )}
 
       <div className="flex items-center justify-between gap-3">
@@ -264,6 +288,20 @@ export default function AudioPlayer({ hasAudio = false, audioUrl = "" }) {
         <span className="w-10 text-right text-xs font-medium text-slate-600">
           {Math.round((Number.isFinite(volume) ? volume : 1) * 100)}%
         </span>
+      </div>
+
+      <div className="pt-1">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleDownload}
+          disabled={isDownloading || !hasValidAudio}
+          aria-label="Download audio"
+          className="w-full justify-center gap-2 rounded-xl border-slate-300 bg-white text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Download className="h-4 w-4" />
+          {isDownloading ? "Downloading..." : "Download Audio"}
+        </Button>
       </div>
     </div>
   );
