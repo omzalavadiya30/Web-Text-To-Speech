@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, Wand2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +12,7 @@ import SpeechSettings from "@/components/tts/SpeechSettings";
 import TextInput from "@/components/tts/TextInput";
 import VoiceSelector from "@/components/tts/VoiceSelector";
 import { languages } from "@/data/languages";
-import { getVoicesForLanguage } from "@/data/voices";
-import { generateSpeech } from "@/services/api";
+import { generateSpeech, getVoices } from "@/services/api";
 
 const MAX_CHARACTERS = 5000;
 const EMPTY_TEXT_ERROR = "Please enter some text before generating speech.";
@@ -21,30 +20,62 @@ const EMPTY_TEXT_ERROR = "Please enter some text before generating speech.";
 export default function TTSWorkspace() {
   const [text, setText] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [selectedVoice, setSelectedVoice] = useState("en-female");
+  const [selectedVoice, setSelectedVoice] = useState("");
+  const [voices, setVoices] = useState([]);
+  const [voicesLoading, setVoicesLoading] = useState(true);
   const [speed, setSpeed] = useState(1);
-  const [pitch, setPitch] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [audioState, setAudioState] = useState({ hasAudio: false });
+  const [audioState, setAudioState] = useState({ hasAudio: false, audioUrl: "" });
   const requestInFlight = useRef(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVoices = async () => {
+      try {
+        const loadedVoices = await getVoices();
+        if (!isMounted) return;
+
+        setVoices(loadedVoices);
+        const initialLanguage = loadedVoices.some((voice) => voice.languages?.includes("en"))
+          ? "en"
+          : loadedVoices.find((voice) => voice.language)?.language ?? "";
+        const initialVoice = loadedVoices.find((voice) =>
+          voice.languages?.includes(initialLanguage) || voice.language === initialLanguage
+        );
+        setSelectedLanguage(initialLanguage);
+        setSelectedVoice(initialVoice?.id ?? "");
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError.message || "Unable to load voices.");
+        }
+      } finally {
+        if (isMounted) setVoicesLoading(false);
+      }
+    };
+
+    loadVoices();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const charCount = text.length;
-  const availableVoices = getVoicesForLanguage(selectedLanguage);
+  const voiceSupportsLanguage = (voice, language) => voice.languages?.includes(language) || voice.language === language;
+  const availableLanguages = languages.filter((language) => voices.some((voice) => voiceSupportsLanguage(voice, language.value))
+  );
+  const availableVoices = voices.filter((voice) => voiceSupportsLanguage(voice, selectedLanguage));
   const validSelectedVoice = availableVoices.some((voice) => voice.id === selectedVoice)
     ? selectedVoice
     : availableVoices[0]?.id ?? "";
 
   const handleLanguageChange = (nextLanguage) => {
     setSelectedLanguage(nextLanguage);
-    const nextLanguageVoices = getVoicesForLanguage(nextLanguage);
-    if (nextLanguageVoices.length > 0) {
-      setSelectedVoice(nextLanguageVoices[0].id);
-    } else {
-      setSelectedVoice("");
-    }
+    const nextLanguageVoices = voices.filter((voice) => voiceSupportsLanguage(voice, nextLanguage));
+    setSelectedVoice(nextLanguageVoices[0]?.id ?? "");
 
     setError("");
     setSuccessMessage("");
@@ -67,7 +98,9 @@ export default function TTSWorkspace() {
     }
 
     if (!selectedLanguage || !availableVoices.some((item) => item.id === validSelectedVoice)) {
-      setError("Please select a valid language and voice.");
+      setError(availableVoices.length === 0
+        ? "No voices available for this language."
+        : "Please select a valid language and voice.");
       return;
     }
 
@@ -82,8 +115,11 @@ export default function TTSWorkspace() {
         language: selectedLanguage,
         voice: validSelectedVoice,
         speed,
-        pitch,
       });
+      if (typeof response.audioUrl !== "string" || !response.audioUrl) {
+        throw new Error("The server did not return generated audio.");
+      }
+      setAudioState({ hasAudio: true, audioUrl: response.audioUrl });
       setSuccessMessage(response.message || "Request sent successfully.");
     } catch (requestError) {
       setError(requestError.message || "Unable to send the TTS request.");
@@ -144,16 +180,18 @@ export default function TTSWorkspace() {
               <LanguageSelector
                 selectedLanguage={selectedLanguage}
                 onLanguageChange={handleLanguageChange}
-                languages={languages}
+                languages={availableLanguages}
+                disabled={voicesLoading}
               />
               <VoiceSelector
                 selectedVoice={validSelectedVoice}
                 onVoiceChange={setSelectedVoice}
                 voices={availableVoices}
+                loading={voicesLoading}
               />
             </div>
 
-            <SpeechSettings speed={speed} onSpeedChange={setSpeed} pitch={pitch} onPitchChange={setPitch} />
+            <SpeechSettings speed={speed} onSpeedChange={setSpeed} />
 
             <div className="flex justify-end border-t border-slate-200 pt-4">
               <GenerateButton
@@ -171,12 +209,12 @@ export default function TTSWorkspace() {
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-lg font-semibold text-slate-900">Output</CardTitle>
                 <div className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-slate-600">
-                  Empty
+                  {audioState.hasAudio ? "Ready" : "Empty"}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <AudioPlayer hasAudio={audioState.hasAudio} />
+              <AudioPlayer hasAudio={audioState.hasAudio} audioUrl={audioState.audioUrl} />
             </CardContent>
           </Card>
 
@@ -191,7 +229,7 @@ export default function TTSWorkspace() {
               </div>
               <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
                 <Sparkles className="mt-0.5 h-4 w-4 text-slate-700" />
-                <p>Try different voices and pitch values for variety.</p>
+                <p>Try different voices and speed settings for variety.</p>
               </div>
             </CardContent>
           </Card>

@@ -1,16 +1,12 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-export const generateSpeech = async (data) => {
+const request = async (path, options) => {
     let response;
 
     try {
-        response = await fetch(`${API_BASE_URL}/tts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-        });
+        response = await fetch(`${API_BASE_URL}${path}`, options);
     } catch {
-        throw new Error("Unable to connect to the backend. Please try again.");
+        throw new Error("Unable to connect to the server. Please try again.");
     }
 
     let result;
@@ -34,3 +30,18 @@ export const generateSpeech = async (data) => {
 
     return result;
 };
+
+export const getVoices = async () => {
+    const result = await request("/voices");
+    if (!Array.isArray(result.voices)) {
+        throw new Error("The server returned an invalid voice list.");
+    }
+    return result.voices;
+};
+
+export const generateSpeech = (data) =>
+    request("/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });

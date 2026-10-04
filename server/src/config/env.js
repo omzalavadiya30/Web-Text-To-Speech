@@ -5,6 +5,7 @@ dotenv.config();
 export const PORT = process.env.PORT || 5000;
 export const NODE_ENV = process.env.NODE_ENV;
 export const CLIENT_URL = process.env.CLIENT_URL;
+export const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 export const MONGODB_URI = process.env.MONGODB_URI;
 export const TTS_API_KEY = process.env.TTS_API_KEY;
 export const TTS_REGION = process.env.TTS_REGION;

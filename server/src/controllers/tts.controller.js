@@ -1,5 +1,16 @@
-export const handleTtsRequest = (req, res) => {
-  const { text, language, voice, speed, pitch } = req.body ?? {};
+import { generateSpeech, getVoices, normalizeLanguageCode } from "../services/tts.service.js";
+
+export const listVoices = async (req, res, next) => {
+  try {
+    const voices = await getVoices();
+    return res.status(200).json({ success: true, voices });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const handleTtsRequest = async (req, res, next) => {
+  const { text, language, voice, speed } = req.body ?? {};
 
   if (typeof text !== "string" || !text.trim()) {
     return res.status(400).json({ success: false, message: "Text is required" });
@@ -17,21 +28,29 @@ export const handleTtsRequest = (req, res) => {
     return res.status(400).json({ success: false, message: "Voice is required" });
   }
 
-  if (speed !== undefined && (typeof speed !== "number" || !Number.isFinite(speed))) {
-    return res.status(400).json({ success: false, message: "Speed must be a number" });
+  if (speed !== undefined && (typeof speed !== "number" || !Number.isFinite(speed) || speed < 0.7 || speed > 1.2)) {
+    return res.status(400).json({ success: false, message: "Speed must be between 0.7 and 1.2" });
   }
 
-  if (pitch !== undefined && (typeof pitch !== "number" || !Number.isFinite(pitch))) {
-    return res.status(400).json({ success: false, message: "Pitch must be a number" });
+  try {
+    const voices = await getVoices();
+    const selectedVoice = voices.find((item) => item.id === voice);
+
+    if (!selectedVoice || !selectedVoice.languages.includes(normalizeLanguageCode(language))) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected voice is not available",
+      });
+    }
+
+    const { audioUrl } = await generateSpeech({ text, voiceId: voice, speed });
+
+    return res.status(200).json({
+      success: true,
+      message: "Speech generated successfully",
+      audioUrl,
+    });
+  } catch (error) {
+    return next(error);
   }
-
-  const data = { text, language, voice };
-  if (speed !== undefined) data.speed = speed;
-  if (pitch !== undefined) data.pitch = pitch;
-
-  return res.status(200).json({
-    success: true,
-    message: "TTS request validated successfully",
-    data,
-  });
 };

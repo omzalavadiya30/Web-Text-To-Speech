@@ -9,13 +9,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
-export default function VoiceSelector({ selectedVoice, onVoiceChange, voices, label = "Voice" }) {
+export default function VoiceSelector({ selectedVoice, onVoiceChange, voices, loading = false, label = "Voice" }) {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-slate-700">{label}</Label>
-      <Select value={selectedVoice} onValueChange={onVoiceChange}>
+      <Select value={selectedVoice} onValueChange={onVoiceChange} disabled={loading || voices.length === 0}>
         <SelectTrigger aria-label="Select voice" className="w-full">
-          <SelectValue placeholder="Select a voice" />
+          <SelectValue placeholder={loading ? "Loading voices..." : "Select a voice"} />
         </SelectTrigger>
         <SelectContent>
           {voices.length > 0 ? (
@@ -25,10 +25,13 @@ export default function VoiceSelector({ selectedVoice, onVoiceChange, voices, la
               </SelectItem>
             ))
           ) : (
-            <div className="px-2 py-3 text-sm text-slate-500">Select a language first</div>
+            <div className="px-2 py-3 text-sm text-slate-500">No voices available for this language.</div>
           )}
         </SelectContent>
       </Select>
+      {!loading && voices.length === 0 && (
+        <p className="text-sm text-slate-500">No voices available for this language.</p>
+      )}
     </div>
   );
 }
