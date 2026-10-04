@@ -1,3 +1,6 @@
+import { unlink } from "node:fs/promises";
+
+import { Speech } from "../models/speech.model.js";
 import { generateSpeech, getVoices, normalizeLanguageCode } from "../services/tts.service.js";
 
 export const listVoices = async (req, res, next) => {
@@ -35,20 +38,52 @@ export const handleTtsRequest = async (req, res, next) => {
   try {
     const voices = await getVoices();
     const selectedVoice = voices.find((item) => item.id === voice);
+    const normalizedLanguage = normalizeLanguageCode(language);
 
-    if (!selectedVoice || !selectedVoice.languages.includes(normalizeLanguageCode(language))) {
+    if (!selectedVoice || !selectedVoice.languages.includes(normalizedLanguage)) {
       return res.status(400).json({
         success: false,
         message: "Selected voice is not available",
       });
     }
 
-    const { audioUrl } = await generateSpeech({ text, voiceId: voice, speed });
+    const { audioUrl, filePath } = await generateSpeech({
+      text,
+      voiceId: voice,
+      speed: typeof speed === "number" ? speed : 1,
+    });
+
+    let speechRecord;
+    try {
+      speechRecord = await Speech.create({
+        text,
+        language: normalizedLanguage,
+        voice,
+        speed: typeof speed === "number" ? speed : 1,
+        audioUrl,
+        provider: "elevenlabs",
+      });
+    } catch (saveError) {
+      await unlink(filePath).catch(() => {});
+      const databaseError = new Error("Failed to save speech metadata.");
+      databaseError.statusCode = 500;
+      databaseError.publicMessage = databaseError.message;
+      throw databaseError;
+    }
 
     return res.status(200).json({
       success: true,
       message: "Speech generated successfully",
-      audioUrl,
+      data: {
+        id: speechRecord._id.toString(),
+        audioUrl: speechRecord.audioUrl,
+        text: speechRecord.text,
+        language: speechRecord.language,
+        voice: speechRecord.voice,
+        speed: speechRecord.speed,
+        provider: speechRecord.provider,
+        createdAt: new Date(speechRecord.createdAt).toISOString(),
+      },
     });
   } catch (error) {
     return next(error);

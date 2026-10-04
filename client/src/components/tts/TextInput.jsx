@@ -22,7 +22,7 @@ export default function TextInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder="Enter or paste your text here..."
           aria-describedby="text-stats"
-          className="min-h-[200px] resize-none border-slate-200 bg-slate-50 text-base shadow-none placeholder:text-slate-400 focus-visible:ring-slate-900 sm:min-h-[260px]"
+          className="min-h-50 resize-none border-slate-200 bg-slate-50 text-base shadow-none placeholder:text-slate-400 focus-visible:ring-slate-900 sm:min-h-65"
         />
       </div>
 

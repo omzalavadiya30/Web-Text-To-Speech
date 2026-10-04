@@ -27,7 +27,7 @@ export default function TTSWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [audioState, setAudioState] = useState({ hasAudio: false, audioUrl: "" });
+  const [audioState, setAudioState] = useState({ hasAudio: false, audioUrl: "", speechId: "" });
   const requestInFlight = useRef(false);
 
   useEffect(() => {
@@ -119,9 +119,14 @@ export default function TTSWorkspace() {
       if (typeof response.audioUrl !== "string" || !response.audioUrl) {
         throw new Error("The server did not return generated audio.");
       }
-      setAudioState({ hasAudio: true, audioUrl: response.audioUrl });
-      setSuccessMessage(response.message || "Request sent successfully.");
+      setAudioState({
+        hasAudio: true,
+        audioUrl: response.audioUrl,
+        speechId: response.id ?? "",
+      });
+      setSuccessMessage("Speech generated successfully.");
     } catch (requestError) {
+      setAudioState({ hasAudio: false, audioUrl: "", speechId: "" });
       setError(requestError.message || "Unable to send the TTS request.");
     } finally {
       requestInFlight.current = false;
@@ -133,6 +138,7 @@ export default function TTSWorkspace() {
     setText("");
     setError("");
     setSuccessMessage("");
+    setAudioState({ hasAudio: false, audioUrl: "", speechId: "" });
   };
 
   return (

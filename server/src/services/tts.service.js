@@ -137,7 +137,7 @@ export const generateSpeech = async ({ text, voiceId, speed }) => {
     throw toProviderError(error, "Unable to generate speech with ElevenLabs.");
   }
 
-  const filename = `${randomUUID()}.mp3`;
+  const filename = `generated-${randomUUID()}.mp3`;
   const filePath = join(AUDIO_DIRECTORY, filename);
 
   try {
@@ -158,5 +158,7 @@ export const generateSpeech = async ({ text, voiceId, speed }) => {
 
   return {
     audioUrl: new URL(`/audio/${filename}`, BACKEND_URL).toString(),
+    filePath,
+    filename,
   };
 };

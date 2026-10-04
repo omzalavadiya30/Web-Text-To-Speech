@@ -39,9 +39,26 @@ export const getVoices = async () => {
     return result.voices;
 };
 
-export const generateSpeech = (data) =>
-    request("/tts", {
+export const generateSpeech = async (data) => {
+    const result = await request("/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
+
+    if (!result || typeof result !== "object" || !result.data || typeof result.data !== "object") {
+        throw new Error("The server returned invalid speech data.");
+    }
+
+    const { audioUrl, id } = result.data;
+
+    if (typeof audioUrl !== "string" || !audioUrl) {
+        throw new Error("Audio URL was not returned by the server.");
+    }
+
+    if (typeof id !== "string" && typeof id !== "number") {
+        throw new Error("Speech record ID was not returned by the server.");
+    }
+
+    return result.data;
+};
